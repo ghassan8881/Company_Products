@@ -60,6 +60,64 @@ export async function GET(req) {
 //   });
 // }
 
+// export async function POST(req) {
+//   try {
+//     const formData = await req.formData();
+
+//     const name = formData.get("name");
+//     const price = formData.get("price");
+//     const description = formData.get("description");
+//     const categoryId = formData.get("categoryId");
+//     const image = formData.get("image"); // نوعه File
+
+//     let imageUrl = null;
+
+//     if (image) {
+//       const bytes = await image.arrayBuffer();
+//       const buffer = Buffer.from(bytes);
+
+//       const uploadDir = path.join(process.cwd(), "public/uploads");
+//       await fs.mkdir(uploadDir, { recursive: true });
+
+//       const fileName = `${Date.now()}-${image.name}`;
+//       const filePath = path.join(uploadDir, fileName);
+
+//       // ✅ هذا يعمل بدون cb
+//       await fs.writeFile(filePath, buffer);
+
+//       imageUrl = `/uploads/${fileName}`;
+//     }
+
+//     // function slugify(str) {
+//     //   return str
+//     //     .toLowerCase()
+//     //     .trim()
+//     //     .replace(/[\s\W-]+/g, "-");
+//     // }
+
+//     const product = await prisma.product.create({
+//       data: {
+//         name,
+//         price: parseFloat(price),
+//         description,
+//         categoryId: parseInt(categoryId),
+//         // slug: slugify(name),
+//         imageUrl,
+//       },
+//     });
+
+//     return NextResponse.json(product, { status: 201 });
+//   } catch (error) {
+//     console.error(error);
+//     return NextResponse.json(
+//       { error: "Failed to create product" },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+import { v2 as cloudinary } from "cloudinary";
+
 export async function POST(req) {
   try {
     const formData = await req.formData();
@@ -68,32 +126,34 @@ export async function POST(req) {
     const price = formData.get("price");
     const description = formData.get("description");
     const categoryId = formData.get("categoryId");
-    const image = formData.get("image"); // نوعه File
+    const image = formData.get("image");
 
     let imageUrl = null;
 
     if (image) {
+      // تكوين Cloudinary
+      cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+      });
+
+      // تحويل الصورة إلى buffer
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      const uploadDir = path.join(process.cwd(), "public/uploads");
-      await fs.mkdir(uploadDir, { recursive: true });
+      // رفع الصورة إلى Cloudinary
+      const uploadResult = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream({ folder: "products" }, (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          })
+          .end(buffer);
+      });
 
-      const fileName = `${Date.now()}-${image.name}`;
-      const filePath = path.join(uploadDir, fileName);
-
-      // ✅ هذا يعمل بدون cb
-      await fs.writeFile(filePath, buffer);
-
-      imageUrl = `/uploads/${fileName}`;
+      imageUrl = uploadResult.secure_url;
     }
-
-    // function slugify(str) {
-    //   return str
-    //     .toLowerCase()
-    //     .trim()
-    //     .replace(/[\s\W-]+/g, "-");
-    // }
 
     const product = await prisma.product.create({
       data: {
@@ -101,14 +161,13 @@ export async function POST(req) {
         price: parseFloat(price),
         description,
         categoryId: parseInt(categoryId),
-        // slug: slugify(name),
         imageUrl,
       },
     });
 
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
-    console.error(error);
+    console.error("Error creating product:", error);
     return NextResponse.json(
       { error: "Failed to create product" },
       { status: 500 }
