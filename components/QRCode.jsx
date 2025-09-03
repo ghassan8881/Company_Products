@@ -6,6 +6,10 @@ import QRCode from "qrcode";
 export default function QRCodeComponent() {
   const [qrUrl, setQrUrl] = useState("");
   const url = process.env.BASE_URL;
+  console.log(
+    "🚀 ~ QRCodeComponent ~ process.env.BASE_URL:",
+    process.env.BASE_URL
+  );
 
   useEffect(() => {
     QRCode.toDataURL(url)
