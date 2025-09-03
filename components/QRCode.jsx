@@ -5,10 +5,10 @@ import QRCode from "qrcode";
 
 export default function QRCodeComponent() {
   const [qrUrl, setQrUrl] = useState("");
-  const url = process.env.BASE_URL;
+  const url = process.env.NEXT_PUBLIC_BASE_URL;
   console.log(
-    "🚀 ~ QRCodeComponent ~ process.env.BASE_URL:",
-    process.env.BASE_URL
+    "🚀 ~ QRCodeComponent ~ process.env.NEXT_PUBLIC_BASE_URL:",
+    process.env.NEXT_PUBLIC_BASE_URL
   );
 
   useEffect(() => {
