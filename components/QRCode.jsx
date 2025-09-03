@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 
 export default function QRCodeComponent() {
   const [qrUrl, setQrUrl] = useState("");
-  const url = "http://localhost:3000/products";
+  const url = process.env.BASE_URL;
 
   useEffect(() => {
     QRCode.toDataURL(url)
